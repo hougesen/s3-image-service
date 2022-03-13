@@ -1,0 +1,4 @@
+/target
+.env
+.aws
+lambda.zip
