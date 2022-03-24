@@ -2,14 +2,39 @@ use aws_config::meta::region::RegionProviderChain;
 use aws_sdk_s3::types::ByteStream;
 use aws_sdk_s3::Client;
 use dotenv::dotenv;
+use rocket::fairing::{Fairing, Info, Kind};
 use rocket::http::ContentType;
+use rocket::http::Header;
 use rocket::Data;
 use rocket::{self, get, post, routes, Error as RocketError};
+use rocket::{Request, Response};
 use rocket_multipart_form_data::{
     mime, MultipartFormData, MultipartFormDataField, MultipartFormDataOptions,
 };
 use sha2::{Digest, Sha256};
 use std::path::Path;
+
+pub struct CORS;
+
+#[rocket::async_trait]
+impl Fairing for CORS {
+    fn info(&self) -> Info {
+        Info {
+            name: "Add CORS headers to responses",
+            kind: Kind::Response,
+        }
+    }
+
+    async fn on_response<'r>(&self, _req: &'r Request<'_>, response: &mut Response<'r>) {
+        response.set_header(Header::new("Access-Control-Allow-Origin", "*"));
+        response.set_header(Header::new(
+            "Access-Control-Allow-Methods",
+            "POST, GET, PATCH, OPTIONS",
+        ));
+        response.set_header(Header::new("Access-Control-Allow-Headers", "*"));
+        response.set_header(Header::new("Access-Control-Allow-Credentials", "true"));
+    }
+}
 
 #[get("/")]
 async fn index() -> &'static str {
@@ -88,7 +113,7 @@ async fn main() -> Result<(), RocketError> {
 
     let rocket = rocket::build().mount("/", routes![index, upload]);
 
-    rocket.launch().await?;
+    rocket.attach(CORS).launch().await?;
 
     Ok(())
 }
