@@ -5,6 +5,7 @@ use dotenv::dotenv;
 use rocket::fairing::{Fairing, Info, Kind};
 use rocket::http::ContentType;
 use rocket::http::Header;
+use rocket::serde::{json::Json, Serialize};
 use rocket::Data;
 use rocket::{self, get, post, routes, Error as RocketError};
 use rocket::{Request, Response};
@@ -36,6 +37,14 @@ impl Fairing for CORS {
     }
 }
 
+#[derive(Serialize)]
+pub struct UploadImageResponse {
+    msg: String,
+    bucket_name: Option<String>,
+    file_name: Option<String>,
+    error: Option<String>,
+}
+
 #[get("/")]
 async fn index() -> &'static str {
     println!("GET /");
@@ -43,7 +52,7 @@ async fn index() -> &'static str {
 }
 
 #[post("/upload-image", data = "<data>")]
-async fn upload(content_type: &ContentType, data: Data<'_>) -> String {
+async fn upload(content_type: &ContentType, data: Data<'_>) -> Json<UploadImageResponse> {
     println!("POST /upload-image");
     dotenv().ok();
 
@@ -85,12 +94,27 @@ async fn upload(content_type: &ContentType, data: Data<'_>) -> String {
         println!("r {:#?}", result);
 
         return match result {
-            Ok(_result) => format!("{}/{}", bucket_name, file_name),
-            Err(result) => format!("something went wrong {:#?}", result),
+            Ok(_result) => Json(UploadImageResponse {
+                msg: String::from("Uploaded image successfully"),
+                bucket_name: Some(bucket_name),
+                file_name: Some(file_name),
+                error: None,
+            }),
+            Err(error) => Json(UploadImageResponse {
+                msg: format!("Error uploading file"),
+                bucket_name: None,
+                file_name: None,
+                error: Some(format!("{:#?}", error)),
+            }),
         };
     }
 
-    "idk what happened fam".to_string()
+    Json(UploadImageResponse {
+        msg: String::from("idk what happened fam"),
+        bucket_name: None,
+        file_name: None,
+        error: None,
+    })
 }
 
 fn generate_file_name(file_name: &str) -> String {
