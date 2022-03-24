@@ -1,14 +1,16 @@
 use aws_config::meta::region::RegionProviderChain;
-use aws_sdk_s3::types::ByteStream;
-use aws_sdk_s3::Client;
+use aws_sdk_s3::{types::ByteStream, Client};
 use dotenv::dotenv;
-use rocket::fairing::{Fairing, Info, Kind};
-use rocket::http::ContentType;
-use rocket::http::Header;
-use rocket::serde::{json::Json, Serialize};
-use rocket::Data;
-use rocket::{self, get, post, routes, Error as RocketError};
-use rocket::{Request, Response};
+use rocket::{
+    self,
+    fairing::{Fairing, Info, Kind},
+    get,
+    http::ContentType,
+    http::Header,
+    post, routes,
+    serde::{json::Json, Serialize},
+    Data, Error as RocketError, Request, Response,
+};
 use rocket_multipart_form_data::{
     mime, MultipartFormData, MultipartFormDataField, MultipartFormDataOptions,
 };
@@ -90,8 +92,6 @@ async fn upload(content_type: &ContentType, data: Data<'_>) -> Json<UploadImageR
             .body(body.unwrap())
             .send()
             .await;
-
-        println!("r {:#?}", result);
 
         return match result {
             Ok(_result) => Json(UploadImageResponse {
